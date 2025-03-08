@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"stress-relief-ai-chat-back/internal/app"
 	"stress-relief-ai-chat-back/internal/domain"
@@ -10,12 +11,14 @@ import (
 type Handler struct {
 	chatService ports.ChatService
 	authService *app.AuthService
+	validator   *validator.Validate
 }
 
 func NewHandler(chatService ports.ChatService, authService *app.AuthService) *Handler {
 	return &Handler{
 		chatService: chatService,
 		authService: authService,
+		validator:   validator.New(),
 	}
 }
 
@@ -23,9 +26,9 @@ func (h *Handler) SetupRoutes(app *fiber.App) {
 	api := app.Group("/api")
 
 	// Chat routes
-	chat := api.Group("/chat")
+	chat := api.Group("/messages")
 	//chat.Use(h.authMiddleware)
-	chat.Post("/message", h.handleMessage)
+	chat.Post("/", h.handleMessage)
 
 	// Auth routes
 	auth := api.Group("/auth")
@@ -49,11 +52,15 @@ func (h *Handler) authMiddleware(c *fiber.Ctx) error {
 
 func (h *Handler) handleMessage(c *fiber.Ctx) error {
 	var req struct {
-		Message string `json:"message"`
+		Message string `json:"message" validate:"required"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+
+	if err := h.validator.Struct(req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	chM := &domain.ChatMessage{

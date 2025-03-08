@@ -72,7 +72,7 @@ go run cmd/main.go
 5. **Test the API:**
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"message":"I feel stressed."}' http://localhost:8080/chat
+curl -X POST -H "Content-Type: application/json" -d '{"message":"I feel stressed."}' http://localhost:8081/api/messages
 ```
 
 ---
