@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/go-playground/validator/v10 v10.25.0
 	github.com/gofiber/fiber/v2 v2.52.6
+	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/joho/godotenv v1.5.1
 	github.com/sashabaranov/go-openai v1.38.0
 	go.uber.org/zap v1.27.0

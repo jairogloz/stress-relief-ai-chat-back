@@ -11,9 +11,7 @@ import (
 	"strconv"
 	"stress-relief-ai-chat-back/internal/adapters/http"
 	"stress-relief-ai-chat-back/internal/adapters/openai"
-	"stress-relief-ai-chat-back/internal/adapters/supabase"
 	"stress-relief-ai-chat-back/internal/adapters/zap"
-	"stress-relief-ai-chat-back/internal/app"
 	"stress-relief-ai-chat-back/internal/app/chat"
 	"syscall"
 	"time"
@@ -33,21 +31,16 @@ func main() {
 	openaiAdapter := openai.NewOpenAIAdapter(os.Getenv("OPENAI_API_KEY"),
 		os.Getenv("OPENAI_ASSISTANT_ID"),
 		logger)
-	authAdapter := supabase.NewAuthAdapter(
-		os.Getenv("SUPABASE_URL"),
-		os.Getenv("SUPABASE_KEY"),
-	)
 
 	// Initialize application services
 	chatService := chat.NewChatService(openaiAdapter, logger)
-	authService := app.NewAuthService(authAdapter)
 
 	// Setup HTTP server
 	server := http.New()
 	server.Use(cors.New())
 
 	// Initialize HTTP handlers
-	httpHandler := http.NewHandler(chatService, authService)
+	httpHandler := http.NewHandler(chatService)
 	httpHandler.SetupRoutes(server.App)
 
 	go func() {

@@ -30,3 +30,6 @@ vendor/
 
 # Dependency directories
 vendor/
+
+# Ignore temp folder
+temp/
