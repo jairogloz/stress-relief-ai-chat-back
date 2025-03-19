@@ -12,14 +12,23 @@ import (
 
 type Handler struct {
 	chatService ports.ChatService
+	logger      ports.Logger
 	validator   *validator.Validate
 }
 
-func NewHandler(chatService ports.ChatService) *Handler {
-	return &Handler{
+func NewHandler(chatService ports.ChatService, logger ports.Logger) *Handler {
+	h := &Handler{
 		chatService: chatService,
+		logger:      logger,
 		validator:   validator.New(),
 	}
+	if h.chatService == nil {
+		panic("Cannot create handler without a ChatService")
+	}
+	if h.logger == nil {
+		panic("Cannot create handler without a Logger")
+	}
+	return h
 }
 
 func (h *Handler) SetupRoutes(app *fiber.App) {
@@ -58,6 +67,7 @@ func (h *Handler) authMiddleware(c *fiber.Ctx) error {
 	}
 
 	c.Locals("user", claims)
+	c.Locals("userID", claims["sub"])
 	return c.Next()
 }
 
@@ -78,8 +88,12 @@ func (h *Handler) handleMessage(c *fiber.Ctx) error {
 		Content: req.Message,
 	}
 
-	//user := c.Locals("user").(*domain.User)
-	resp, err := h.chatService.ProcessMessage(c.Context(), chM, nil)
+	userID, ok := c.Locals("userID").(string)
+	if !ok {
+		h.logger.Error(c.Context(), "could not get user UserID from context")
+		return fiber.NewError(fiber.StatusInternalServerError, "Oops! Something went wrong")
+	}
+	resp, err := h.chatService.ProcessMessage(c.Context(), chM, userID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

@@ -2,6 +2,7 @@ package http
 
 import "github.com/gofiber/fiber/v2"
 import "github.com/gofiber/fiber/v2/middleware/recover"
+import "github.com/gofiber/fiber/v2/middleware/cors"
 
 type FiberServer struct {
 	*fiber.App
@@ -22,6 +23,8 @@ func New() *FiberServer {
 			EnableStackTrace: true,
 		},
 	))
+
+	server.App.Use(cors.New())
 
 	return server
 }

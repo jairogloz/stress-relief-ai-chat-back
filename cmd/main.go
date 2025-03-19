@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"stress-relief-ai-chat-back/internal/adapters/http"
 	"stress-relief-ai-chat-back/internal/adapters/openai"
+	"stress-relief-ai-chat-back/internal/adapters/supabase/users"
 	"stress-relief-ai-chat-back/internal/adapters/zap"
 	"stress-relief-ai-chat-back/internal/app/chat"
 	"syscall"
@@ -32,15 +33,21 @@ func main() {
 		os.Getenv("OPENAI_ASSISTANT_ID"),
 		logger)
 
+	// Create user storage
+	userAPIHandler, err := users.NewUserAPIHandler(os.Getenv("SUPABASE_API_KEY"), os.Getenv("SUPABASE_URL"), logger)
+	if err != nil {
+		logger.Fatal(context.Background(), "could not create user storage", "error", err.Error())
+	}
+
 	// Initialize application services
-	chatService := chat.NewChatService(openaiAdapter, logger)
+	chatService := chat.NewChatService(openaiAdapter, logger, userAPIHandler)
 
 	// Setup HTTP server
 	server := http.New()
 	server.Use(cors.New())
 
 	// Initialize HTTP handlers
-	httpHandler := http.NewHandler(chatService)
+	httpHandler := http.NewHandler(chatService, logger)
 	httpHandler.SetupRoutes(server.App)
 
 	go func() {

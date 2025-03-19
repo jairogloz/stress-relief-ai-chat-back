@@ -26,7 +26,7 @@ func NewOpenAIAdapter(apiKey, assistantID string, l ports.Logger) ports.ChatHand
 		logger:      l,
 	}
 	if h.assistantID == "" {
-		panic("Cannot create OpenAI handler without an Assistant ID")
+		panic("Cannot create OpenAI handler without an Assistant UserID")
 	}
 	if h.logger == nil {
 		panic("Cannot create OpenAI handler without a Logger")
@@ -69,11 +69,36 @@ func (h *handler) ProcessMessage(ctx context.Context, message *domain.ChatMessag
 		}
 		h.logger.Debug(ctx, "Thread and run created", "time", time.Since(startCreateThread).String())
 		h.logger.Debug(ctx, "Thread and run created", "threadID", run.ThreadID, "runID", run.ID)
-
-		// As a new thread was created, we append it to the user metadata
-		//newUserMetadata[MetadataFieldThreadID] = run.ThreadID
 	} else {
 		h.logger.Debug(ctx, "Thread found for user", "thread_id", threadID)
+
+		// There seems to be an open thread for the user, so add the prompt to the thread
+		// and run
+
+		// Add message to thread
+		// Todo: once CreateRun can receive an openai.RunRequest with additional messages, use that instead
+		// and get rid of this CreateMessage part
+		startCreateMessage := time.Now().UTC()
+		_, err = h.client.CreateMessage(ctx, *threadID, openai.MessageRequest{
+			Role:    string(openai.ThreadMessageRoleUser),
+			Content: message.Content,
+		})
+		if err != nil {
+			h.logger.Error(ctx, "Error creating message", "error", err)
+			return nil, fmt.Errorf("could not create message: %w", err)
+		}
+		h.logger.Debug(ctx, "Message created", "time", time.Since(startCreateMessage).String())
+
+		// Run thread
+		startCreateRun := time.Now().UTC()
+		run, err = h.client.CreateRun(ctx, *threadID, openai.RunRequest{
+			AssistantID: h.assistantID,
+		})
+		if err != nil {
+			h.logger.Error(ctx, "Error creating run", "error", err)
+			return nil, fmt.Errorf("could not create run: %w", err)
+		}
+		h.logger.Debug(ctx, "Run created", "time", time.Since(startCreateRun).String())
 	}
 
 	startWaitForRunCompletion := time.Now().UTC()
@@ -102,7 +127,8 @@ func (h *handler) ProcessMessage(ctx context.Context, message *domain.ChatMessag
 		msg := msgContent[0]
 		if msgTxt := msg.Text; msgTxt != nil {
 			return &domain.ChatResponse{
-				Content: (*msgTxt).Value,
+				Content:  (*msgTxt).Value,
+				ThreadID: run.ThreadID,
 			}, nil
 		} else {
 			return nil, errors.New("no text in message")
@@ -119,8 +145,8 @@ func (h *handler) ProcessMessage(ctx context.Context, message *domain.ChatMessag
 // Parameters:
 //   - ctx: The context to control cancellation and timeout.
 //   - client: The OpenAI client used to retrieve the run status.
-//   - threadID: The ID of the thread containing the run.
-//   - runID: The ID of the run to wait for completion.
+//   - threadID: The UserID of the thread containing the run.
+//   - runID: The UserID of the run to wait for completion.
 //   - checkInterval: The interval at which to check the run status.
 //
 // Returns:
