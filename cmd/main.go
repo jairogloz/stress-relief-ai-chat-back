@@ -27,6 +27,8 @@ func main() {
 		log.Println("Running in Railway environment: ", os.Getenv("RAILWAY_ENVIRONMENT"))
 	}
 
+	fmt.Println("Port: ", os.Getenv("PORT"))
+
 	logger, err := zap.NewLogger("development")
 	if err != nil {
 		log.Fatalf("Error initializing logger: %s", err)
