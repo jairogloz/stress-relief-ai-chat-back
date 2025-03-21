@@ -19,8 +19,12 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found")
+	if os.Getenv("RAILWAY_ENVIRONMENT_NAME") == "" {
+		if err := godotenv.Load(); err != nil {
+			log.Printf("Warning: .env file not found")
+		}
+	} else {
+		log.Println("Running in Railway environment: ", os.Getenv("RAILWAY_ENVIRONMENT"))
 	}
 
 	logger, err := zap.NewLogger("development")
