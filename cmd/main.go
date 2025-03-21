@@ -28,6 +28,7 @@ func main() {
 	}
 
 	fmt.Println("Port: ", os.Getenv("PORT"))
+	fmt.Println("OpenAIAPIKey: ", os.Getenv("OPENAI_API_KEY"))
 
 	logger, err := zap.NewLogger("development")
 	if err != nil {
