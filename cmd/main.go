@@ -27,8 +27,10 @@ func main() {
 		log.Println("Running in Railway environment: ", os.Getenv("RAILWAY_ENVIRONMENT"))
 	}
 
-	fmt.Println("Port: ", os.Getenv("PORT"))
-	fmt.Println("OpenAIAPIKey: ", os.Getenv("OPENAI_API_KEY"))
+	fmt.Println("ENV DUMP:")
+	for _, e := range os.Environ() {
+		fmt.Println(e)
+	}
 
 	logger, err := zap.NewLogger("development")
 	if err != nil {
